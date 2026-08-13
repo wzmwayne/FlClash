@@ -4,6 +4,40 @@ on:
   workflow_dispatch:
 
 jobs:
+  build-core-ios:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.26.4'
+
+      - name: Fetch submodules over HTTPS
+        run: |
+          git config --global url."https://github.com/".insteadOf "git@github.com:"
+          git submodule update --init --recursive
+
+      - name: Build Go core for iOS
+        run: |
+          SDK="$(xcrun --sdk iphoneos --show-sdk-path)"
+          CLANG="$(xcrun --sdk iphoneos --find clang)"
+          mkdir -p libclash/ios/arm64
+          cd core
+          CGO_ENABLED=1 GOOS=ios GOARCH=arm64 \
+            CC="$CLANG -arch arm64 -isysroot $SDK" \
+            CGO_CFLAGS="-mios-version-min=15.1" \
+            CGO_LDFLAGS="-mios-version-min=15.1" \
+            go build -buildmode=c-shared -ldflags="-w -s" -tags=with_gvisor \
+            -o ../libclash/ios/arm64/libclash.a .
+          cd ..
+          ls -la libclash/ios/arm64/
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: libclash-ios
+          path: libclash/ios/arm64/
+
   build-ios:
     runs-on: macos-latest
     steps:
@@ -30,7 +64,7 @@ jobs:
           sed -i '' "s/IPHONEOS_DEPLOYMENT_TARGET = 13.0;/IPHONEOS_DEPLOYMENT_TARGET = 15.1;/g" ios/Runner.xcodeproj/project.pbxproj
 
       - name: Build iOS (No Sign)
-        run: flutter build ios --release --no-codesign
+        run: flutter build ios --release --no-codesign -v
 
       - uses: actions/upload-artifact@v4
         with:
