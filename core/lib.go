@@ -21,7 +21,6 @@ import (
 	"github.com/metacubex/mihomo/log"
 	"golang.org/x/sync/semaphore"
 	"net"
-	"strings"
 	"sync"
 	"syscall"
 	"unsafe"
@@ -154,7 +153,7 @@ func handleStartTun(callback unsafe.Pointer, fd int, stack, address, dns string)
 func handleUpdateDns(value string) {
 	go func() {
 		log.Infoln("[DNS] updateDns %s", value)
-		dns.UpdateSystemDNS(strings.Split(value, ","))
+		updateSystemDns(value)
 		dns.FlushCacheWithDefaultResolver()
 	}()
 }

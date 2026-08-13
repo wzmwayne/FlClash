@@ -215,6 +215,41 @@ class BuildMacosCommand extends BuildCommand {
   }
 }
 
+class BuildIosCommand extends BuildCommand {
+  BuildIosCommand() {
+    argParser.addOption(
+      'arch',
+      valueHelp: 'arm64',
+      help: 'Target architecture (default: arm64)',
+    );
+  }
+
+  @override
+  final name = 'ios';
+
+  @override
+  final description = 'Build iOS Go core (c-shared library)';
+
+  @override
+  Future<void> runBuildCommand() async {
+    final archName = argResults?['arch'] as String?;
+    final config = BuildConfig.load(rootDir: _rootDir);
+
+    final arch = archName ?? 'arm64';
+    final targets =
+        Target.forPlatform('ios').where((t) => t.goarch == arch).toList();
+
+    if (targets.isEmpty) {
+      throw BuildException('Invalid arch: $arch');
+    }
+
+    final builder = GoBuilder(rootDir: _rootDir, config: config);
+    final corePaths = await builder.buildAll(targets);
+
+    _log.info('Build complete: $corePaths');
+  }
+}
+
 Future<void> runMain(List<String> args) async {
   try {
     initLogging();
@@ -228,7 +263,8 @@ Future<void> runMain(List<String> args) async {
       ..addCommand(BuildAndroidCommand())
       ..addCommand(BuildLinuxCommand())
       ..addCommand(BuildWindowsCommand())
-      ..addCommand(BuildMacosCommand());
+      ..addCommand(BuildMacosCommand())
+      ..addCommand(BuildIosCommand());
 
     final topResults = runner.parse(args);
     _rootDir = (topResults['root-dir'] as String?) ?? _findProjectRoot();

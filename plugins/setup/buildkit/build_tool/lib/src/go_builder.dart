@@ -13,6 +13,25 @@ import 'util.dart';
 final _log = Logger('go_builder');
 
 String _resolveCc(Target target) {
+  if (target.goos == 'ios') {
+    final sdkResult = Process.runSync(
+      'xcrun',
+      ['--sdk', 'iphoneos', '--show-sdk-path'],
+    );
+    final sdk = (sdkResult.stdout as String).trim();
+    if (sdk.isEmpty || sdkResult.exitCode != 0) {
+      throw BuildException('Unable to locate iOS SDK (xcrun --sdk iphoneos)');
+    }
+    final clangResult = Process.runSync(
+      'xcrun',
+      ['--sdk', 'iphoneos', '--find', 'clang'],
+    );
+    final clang = (clangResult.stdout as String).trim();
+    if (clang.isEmpty || clangResult.exitCode != 0) {
+      throw BuildException('Unable to locate iOS clang (xcrun)');
+    }
+    return '$clang -arch ${target.goarch} -isysroot $sdk';
+  }
   final ndk = Environment.androidNdk;
   final prebuiltDir = Directory(
     p.join(ndk, 'toolchains', 'llvm', 'prebuilt'),
@@ -58,6 +77,10 @@ class GoBuilder {
       env['CGO_ENABLED'] = '1';
       env['CC'] = _resolveCc(target);
       env['CFLAGS'] = '-O3 -Werror';
+      if (target.goos == 'ios') {
+        env['CGO_CFLAGS'] = '-mios-version-min=15.1';
+        env['CGO_LDFLAGS'] = '-mios-version-min=15.1';
+      }
     } else {
       env['CGO_ENABLED'] = '0';
     }
@@ -66,20 +89,20 @@ class GoBuilder {
       'build',
       '-ldflags=${config.goLdflags}',
       '-tags=${config.tags}',
-      if (target.isLib) '-buildmode=c-shared',
+      if (target.isLib)
+        '-buildmode=${target.goos == 'ios' ? 'c-archive' : 'c-shared'}',
       '-o',
       outFile,
     ];
 
     _log.info(kDoubleSeparator);
-    _log.info(
-        'Building Go core: $target ${target.isLib ? "(CGO, c-shared)" : "(standalone)"}');
+    _log.info('Building Go core: $target ${target.isLib ? '(CGO, ${target.goos == 'ios' ? 'c-archive' : 'c-shared'})' : '(standalone)'}');
     _log.info(kSeparator);
 
     await runCommandStream('go', args,
         workingDirectory: _corePath, environment: env);
 
-    if (target.isLib && target.abi != null) {
+    if (target.isLib && target.goos == 'android' && target.abi != null) {
       await _adjustAndroidOutput(
           outDir: p.join(_outputPath, target.platformDir),
           abiDir: target.abi!,

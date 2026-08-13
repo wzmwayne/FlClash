@@ -39,6 +39,15 @@ class Target {
     flutterPlatform: 'android-x64',
   );
 
+  // --- iOS (c-shared library) ---
+  static const iosArm64 = Target(
+    goos: 'ios',
+    goarch: 'arm64',
+    abi: 'arm64',
+    isLib: true,
+    flutterPlatform: 'ios-arm64',
+  );
+
   // --- macOS (executable) ---
   static const macosArm64 = Target(goos: 'darwin', goarch: 'arm64');
   static const macosAmd64 = Target(goos: 'darwin', goarch: 'amd64');
@@ -55,6 +64,7 @@ class Target {
     androidArm,
     androidArm64,
     androidAmd64,
+    iosArm64,
     macosArm64,
     macosAmd64,
     linuxArm64,
@@ -116,6 +126,8 @@ class Target {
         return '.dll';
       case 'darwin':
         return '.dylib';
+      case 'ios':
+        return '.a';
       default:
         throw Exception('Unknown GOOS: $goos');
     }
