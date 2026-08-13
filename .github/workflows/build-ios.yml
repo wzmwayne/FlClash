@@ -24,6 +24,11 @@ jobs:
       - name: Generate iOS scaffold
         run: flutter create --platforms ios .
 
+      - name: Bump iOS deployment target
+        run: |
+          sed -i '' "s/platform :ios, '13.0'/platform :ios, '15.1'/" ios/Podfile
+          sed -i '' "s/IPHONEOS_DEPLOYMENT_TARGET = 13.0;/IPHONEOS_DEPLOYMENT_TARGET = 15.1;/g" ios/Runner.xcodeproj/project.pbxproj
+
       - name: Build iOS (No Sign)
         run: flutter build ios --release --no-codesign
 
