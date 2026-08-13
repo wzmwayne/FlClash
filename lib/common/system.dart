@@ -29,6 +29,10 @@ class System {
 
   bool get isAndroid => Platform.isAndroid;
 
+  bool get isIOS => Platform.isIOS;
+
+  bool get isMobile => isAndroid || isIOS;
+
   bool get isLinux => Platform.isLinux;
 
   Future<int> get version async {
@@ -36,6 +40,9 @@ class System {
     return switch (Platform.operatingSystem) {
       'macos' => (deviceInfo as MacOsDeviceInfo).majorVersion,
       'android' => (deviceInfo as AndroidDeviceInfo).version.sdkInt,
+      'ios' => (deviceInfo as IosDeviceInfo).systemVersion.isNotEmpty
+          ? int.tryParse((deviceInfo as IosDeviceInfo).systemVersion.split('.').first) ?? 0
+          : 0,
       'windows' => (deviceInfo as WindowsDeviceInfo).majorVersion,
       String() => 0,
     };

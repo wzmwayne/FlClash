@@ -22,8 +22,12 @@ class CoreLib extends CoreHandlerInterface {
       return 'core is connected';
     }
     final res = await service?.init();
-    if (res?.isEmpty != true) {
-      return res ?? '';
+    if (res == null) {
+      _connectedCompleter.complete(true);
+      return '';
+    }
+    if (res.isNotEmpty) {
+      return res;
     }
     _connectedCompleter.complete(true);
     final syncRes = await service?.syncState(
@@ -85,4 +89,4 @@ class CoreLib extends CoreHandlerInterface {
   Completer get completer => _connectedCompleter;
 }
 
-CoreLib? get coreLib => system.isAndroid ? CoreLib() : null;
+CoreLib? get coreLib => system.isMobile ? CoreLib() : null;

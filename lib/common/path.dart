@@ -22,7 +22,11 @@ class AppPath {
       tempDir.complete(value);
     });
     getDownloadsDirectory().then((value) {
-      downloadDir.complete(value);
+      if (value != null) {
+        downloadDir.complete(value);
+        return;
+      }
+      dataDir.future.then(downloadDir.complete);
     });
     getApplicationCacheDirectory().then((value) {
       cacheDir.complete(value);

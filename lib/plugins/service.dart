@@ -49,10 +49,24 @@ class Service {
     });
   }
 
+  Future<T?> _invokeChannel<T>(Future<T?> Function() invoke) async {
+    try {
+      return await invoke();
+    } on MissingPluginException catch (e) {
+      commonPrint.log(
+        'service channel not available: ${e.message}',
+        logLevel: LogLevel.warning,
+      );
+      return null;
+    }
+  }
+
   Future<ActionResult?> invokeAction(Action action) async {
-    final data = await methodChannel.invokeMethod<String>(
-      'invokeAction',
-      json.encode(action),
+    final data = await _invokeChannel<String>(
+      () => methodChannel.invokeMethod<String>(
+        'invokeAction',
+        json.encode(action),
+      ),
     );
     if (data == null) {
       return null;
@@ -62,31 +76,48 @@ class Service {
   }
 
   Future<bool> start() async {
-    return await methodChannel.invokeMethod<bool>('start') ?? false;
+    return await _invokeChannel<bool>(
+          () => methodChannel.invokeMethod<bool>('start'),
+        ) ??
+        false;
   }
 
   Future<bool> stop() async {
-    return await methodChannel.invokeMethod<bool>('stop') ?? false;
+    return await _invokeChannel<bool>(
+          () => methodChannel.invokeMethod<bool>('stop'),
+        ) ??
+        false;
   }
 
   Future<String> init() async {
-    return await methodChannel.invokeMethod<String>('init') ?? '';
+    return await _invokeChannel<String>(
+          () => methodChannel.invokeMethod<String>('init'),
+        ) ??
+        '';
   }
 
   Future<String> syncState(SharedState state) async {
-    return await methodChannel.invokeMethod<String>(
-          'syncState',
-          json.encode(state),
+    return await _invokeChannel<String>(
+          () => methodChannel.invokeMethod<String>(
+            'syncState',
+            json.encode(state),
+          ),
         ) ??
         '';
   }
 
   Future<bool> shutdown() async {
-    return await methodChannel.invokeMethod<bool>('shutdown') ?? true;
+    return await _invokeChannel<bool>(
+          () => methodChannel.invokeMethod<bool>('shutdown'),
+        ) ??
+        true;
   }
 
   Future<DateTime?> getRunTime() async {
-    final ms = await methodChannel.invokeMethod<int>('getRunTime') ?? 0;
+    final ms = await _invokeChannel<int>(
+          () => methodChannel.invokeMethod<int>('getRunTime'),
+        ) ??
+        0;
     if (ms == 0) {
       return null;
     }
@@ -106,4 +137,4 @@ class Service {
   }
 }
 
-Service? get service => system.isAndroid ? Service() : null;
+Service? get service => system.isMobile ? Service() : null;

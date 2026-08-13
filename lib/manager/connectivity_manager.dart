@@ -25,15 +25,26 @@ class ConnectivityManager extends StatefulWidget {
 class _ConnectivityManagerState extends State<ConnectivityManager> {
   late StreamSubscription subscription;
 
+  Future<void> _updateSsid() async {
+    try {
+      final ssid = await WifiSsidManager.instance.getSsid();
+      globalState.container.read(currentSSIDProvider.notifier).value = ssid;
+      commonPrint.log('Wi-fi SSID: $ssid ', logLevel: LogLevel.info);
+    } catch (e) {
+      commonPrint.log(
+        'get ssid failed: $e',
+        logLevel: LogLevel.warning,
+      );
+      globalState.container.read(currentSSIDProvider.notifier).value = null;
+    }
+  }
+
   @override
   void initState() {
     super.initState();
     subscription = Connectivity().onConnectivityChanged.listen((results) {
       if (results.contains(ConnectivityResult.wifi)) {
-        WifiSsidManager.instance.getSsid().then((ssid) {
-          globalState.container.read(currentSSIDProvider.notifier).value = ssid;
-          commonPrint.log('Wi-fi SSID: $ssid ', logLevel: LogLevel.info);
-        });
+        _updateSsid();
       } else {
         globalState.container.read(currentSSIDProvider.notifier).value = null;
       }
