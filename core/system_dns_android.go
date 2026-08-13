@@ -10,3 +10,7 @@ import (
 func updateSystemDns(value string) {
 	dns.UpdateSystemDNS(strings.Split(value, ","))
 }
+
+func flushDnsCache() {
+	dns.FlushCacheWithDefaultResolver()
+}

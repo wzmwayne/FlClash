@@ -3,3 +3,5 @@
 package main
 
 func updateSystemDns(value string) {}
+
+func flushDnsCache() {}
