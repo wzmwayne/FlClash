@@ -28,7 +28,7 @@ jobs:
             CC="$CLANG -arch arm64 -isysroot $SDK" \
             CGO_CFLAGS="-mios-version-min=15.1" \
             CGO_LDFLAGS="-mios-version-min=15.1" \
-            go build -buildmode=c-shared -ldflags="-w -s" -tags=with_gvisor \
+            go build -buildmode=c-archive -ldflags="-w -s" -tags=with_gvisor \
             -o ../libclash/ios/arm64/libclash.a .
           cd ..
           ls -la libclash/ios/arm64/
