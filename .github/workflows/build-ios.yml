@@ -8,19 +8,21 @@ jobs:
     runs-on: macos-latest
     steps:
       - uses: actions/checkout@v4
-        with:
-          submodules: recursive
 
       - uses: subosito/flutter-action@v2
         with:
-          flutter-version: '3.x'
+          channel: master
+          flutter-version: '3.44.4'
 
       - uses: actions/setup-go@v5
         with:
-          go-version: '1.x'
+          go-version: '1.26.4'
 
       - name: Install dependencies
         run: flutter pub get
+
+      - name: Generate iOS scaffold
+        run: flutter create --platforms ios .
 
       - name: Build iOS (No Sign)
         run: flutter build ios --release --no-codesign
