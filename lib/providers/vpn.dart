@@ -1,4 +1,4 @@
-import 'package:flutter_riverpod/riverpod.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 enum VpnCapability { available, degraded, unavailable }
 
@@ -9,7 +9,27 @@ class VpnError {
   const VpnError(this.message, {this.isFatal = false});
 }
 
-final vpnCapabilityProvider =
-    StateProvider<VpnCapability>((ref) => VpnCapability.unavailable);
+class VpnCapabilityNotifier extends Notifier<VpnCapability> {
+  @override
+  VpnCapability build() => VpnCapability.unavailable;
 
-final vpnErrorProvider = StateProvider<VpnError?>((ref) => null);
+  void setCapability(VpnCapability value) => state = value;
+}
+
+class VpnErrorNotifier extends Notifier<VpnError?> {
+  @override
+  VpnError? build() => null;
+
+  void setError(VpnError? error) => state = error;
+
+  void clearError() => state = null;
+}
+
+final vpnCapabilityProvider =
+    NotifierProvider<VpnCapabilityNotifier, VpnCapability>(
+  VpnCapabilityNotifier.new,
+);
+
+final vpnErrorProvider = NotifierProvider<VpnErrorNotifier, VpnError?>(
+  VpnErrorNotifier.new,
+);
