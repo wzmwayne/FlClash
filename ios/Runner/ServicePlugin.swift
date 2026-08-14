@@ -3,16 +3,16 @@ import Flutter
 import Foundation
 
 class ServicePlugin: NSObject, FlutterPlugin {
-  private static var channel: FlutterMethodChannel?
-  private static var bridgeInstalled = false
+  static var channel: FlutterMethodChannel?
+  static var bridgeInstalled = false
 
-  private static var callbacks: [UInt: (String) -> Void] = [:]
-  private static var nextKey: UInt = 1
-  private static let eventKey: UInt = UInt.max
-  private static var callbackLock = NSLock()
+  static var callbacks: [UInt: (String) -> Void] = [:]
+  static var nextKey: UInt = 1
+  static let eventKey: UInt = UInt.max
+  static var callbackLock = NSLock()
 
-  private static var storedSetupParams = "{\"selected-map\":{},\"test-url\":\"\"}"
-  private static var startedAt: Int64 = 0
+  static var storedSetupParams = "{\"selected-map\":{},\"test-url\":\"\"}"
+  static var startedAt: Int64 = 0
 
   static func register(with registrar: FlutterPluginRegistrar) {
     let channel = FlutterMethodChannel(
@@ -126,26 +126,14 @@ class ServicePlugin: NSObject, FlutterPlugin {
     guard !bridgeInstalled else { return }
     bridgeInstalled = true
 
-    result_func = { callback, data in
-      var string = ""
-      if let data = data {
-        string = String(cString: data)
-      }
-      deliverCallback(callback, string)
-    }
-    release_object_func = { callback in
-      removeCallback(callback)
-    }
-    free_string_func = { pointer in
-      if let pointer = pointer {
-        free(pointer)
-      }
-    }
-    protect_func = { _, _ in }
-    resolve_process_func = { _, _, _, _, _ in nil }
+    result_func = serviceBridgeResult
+    release_object_func = serviceBridgeReleaseObject
+    free_string_func = serviceBridgeFreeString
+    protect_func = serviceBridgeProtect
+    resolve_process_func = serviceBridgeResolveProcess
   }
 
-  private static func registerCallback(_ callback: @escaping (String) -> Void) -> UnsafeMutableRawPointer? {
+  static func registerCallback(_ callback: @escaping (String) -> Void) -> UnsafeMutableRawPointer? {
     callbackLock.lock()
     defer { callbackLock.unlock() }
     let key = nextKey
@@ -154,7 +142,7 @@ class ServicePlugin: NSObject, FlutterPlugin {
     return UnsafeMutableRawPointer(bitPattern: key)
   }
 
-  private static func deliverCallback(_ callback: UnsafeMutableRawPointer?, _ string: String) {
+  static func deliverCallback(_ callback: UnsafeMutableRawPointer?, _ string: String) {
     guard let callback = callback else { return }
     let key = UInt(bitPattern: callback)
     callbackLock.lock()
@@ -163,7 +151,7 @@ class ServicePlugin: NSObject, FlutterPlugin {
     callbackClosure?(string)
   }
 
-  private static func removeCallback(_ callback: UnsafeMutableRawPointer?) {
+  static func removeCallback(_ callback: UnsafeMutableRawPointer?) {
     guard let callback = callback else { return }
     let key = UInt(bitPattern: callback)
     callbackLock.lock()
@@ -206,4 +194,38 @@ class ServicePlugin: NSObject, FlutterPlugin {
     out += "\""
     return out
   }
+}
+
+// MARK: - C function pointer implementations
+// These must be non-capturing functions so Swift can convert them to
+// C function pointers that bride.c dereferences.
+
+private func serviceBridgeResult(_ callback: UnsafeMutableRawPointer?, _ data: UnsafePointer<CChar>?) {
+  var string = ""
+  if let data = data {
+    string = String(cString: data)
+  }
+  ServicePlugin.deliverCallback(callback, string)
+}
+
+private func serviceBridgeReleaseObject(_ callback: UnsafeMutableRawPointer?) {
+  ServicePlugin.removeCallback(callback)
+}
+
+private func serviceBridgeFreeString(_ pointer: UnsafeMutablePointer<CChar>?) {
+  if let pointer = pointer {
+    free(pointer)
+  }
+}
+
+private func serviceBridgeProtect(_ tunInterface: UnsafeMutableRawPointer?, _ fd: Int32) {}
+
+private func serviceBridgeResolveProcess(
+  _ tunInterface: UnsafeMutableRawPointer?,
+  _ proto: Int32,
+  _ source: UnsafePointer<CChar>?,
+  _ target: UnsafePointer<CChar>?,
+  _ uid: Int32
+) -> UnsafeMutablePointer<CChar>? {
+  return nil
 }
