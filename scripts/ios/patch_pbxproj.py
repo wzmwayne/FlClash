@@ -81,7 +81,8 @@ bridging_anchor = 'SWIFT_OBJC_BRIDGING_HEADER = "Runner/Runner-Bridging-Header.h
 assert bridging_anchor in text, "Bridging header build setting not found"
 text = text.replace(
     bridging_anchor,
-    bridging_anchor + f'\n\t\t\t\tOTHER_LDFLAGS = "$(inherited) {LIBCLASH}";',
+    bridging_anchor
+    + f'\n\t\t\t\tOTHER_LDFLAGS = "$(inherited) -lresolv {LIBCLASH}";',
 )
 
 text = text.replace(
