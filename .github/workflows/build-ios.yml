@@ -33,6 +33,10 @@ jobs:
           cd ..
           ls -la libclash/ios/arm64/
 
+      - name: Verify exported core symbols
+        run: |
+          nm -g libclash/ios/arm64/libclash.a | grep -E " T _?(invokeAction|startTUN|quickSetup|setEventListener|getTotalTraffic|getTraffic|stopTun|suspend|forceGC|updateDns)$"
+
       - uses: actions/upload-artifact@v4
         with:
           name: libclash-ios
@@ -40,8 +44,21 @@ jobs:
 
   build-ios:
     runs-on: macos-latest
+    needs: build-core-ios
     steps:
       - uses: actions/checkout@v4
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: libclash-ios
+          path: libclash/ios/arm64/
+
+      - name: Copy core into Runner
+        run: |
+          mkdir -p ios/Runner/libclash
+          cp libclash/ios/arm64/libclash.a ios/Runner/libclash/libclash.a
+          cp libclash/ios/arm64/libclash.h ios/Runner/libclash/libclash.h
+          ls -la ios/Runner/libclash/
 
       - uses: subosito/flutter-action@v2
         with:
@@ -62,6 +79,9 @@ jobs:
         run: |
           sed -i '' "s/platform :ios, '13.0'/platform :ios, '15.1'/" ios/Podfile
           sed -i '' "s/IPHONEOS_DEPLOYMENT_TARGET = 13.0;/IPHONEOS_DEPLOYMENT_TARGET = 15.1;/g" ios/Runner.xcodeproj/project.pbxproj
+
+      - name: Patch Xcode project
+        run: python3 scripts/ios/patch_pbxproj.py ios/Runner.xcodeproj/project.pbxproj
 
       - name: Build iOS (No Sign)
         run: flutter build ios --release --no-codesign -v
