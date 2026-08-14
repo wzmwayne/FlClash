@@ -46,7 +46,7 @@ text = insert_into_section(
 bridge_ref_entry = (
     f'\t\t{bridge_ref} /* libclash_bridge.c */ = '
     f'{{isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; '
-    f'path = libclash_bridge.c; sourceTree = "<group>"; }};\n'
+    f'path = libclash/libclash_bridge.c; sourceTree = "<group>"; }};\n'
 )
 service_ref_entry = (
     f'\t\t{service_ref} /* ServicePlugin.swift */ = '
